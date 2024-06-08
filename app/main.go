@@ -30,8 +30,7 @@ func init() {
 }
 
 func main() {
-	DBCon := services.GetConnection()
-	router := routes.GetRouter(DBCon)
+	router := routes.GetRouter()
 
 	err := router.Run(":8000")
 
