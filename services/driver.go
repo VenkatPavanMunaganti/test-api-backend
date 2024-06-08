@@ -8,7 +8,9 @@ import (
 	"time"
 )
 
-func Connection(URI string) *mongo.Client {
+var DB *mongo.Client
+
+func ConnectToMongo(URI string) error {
 
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancelCtx()
@@ -21,8 +23,17 @@ func Connection(URI string) *mongo.Client {
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		log.Fatalln(err)
-		return nil
+		return err
 	}
 
-	return client
+	return nil
+}
+
+func GetConnection() *mongo.Client {
+	return DB
+}
+
+func GetCollection(client *mongo.Client, collectionName string) *mongo.Collection {
+	collection := client.Database("Pearson").Collection(collectionName)
+	return collection
 }
