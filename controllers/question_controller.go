@@ -6,42 +6,41 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zeekhoks/test-api-backend/models"
 	"github.com/zeekhoks/test-api-backend/services"
-	"log"
+	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
 )
 
-//var questionCollection = services.GetCollection(DB, "questions")
-
 func GetDisplayQuestionsByTopicHandler() gin.HandlerFunc {
-
 	return func(context *gin.Context) {
-		DB := services.GetConnection()
-		questionsCollection := services.GetCollection(DB, "questions")
-
-		if questionsCollection != nil {
-			log.Println("collection found")
-		}
-
+		//get params from the request
 		params := context.Request.URL.Query()
-
 		if params.Get("topic") == "" {
 			context.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"error": "Topic not provided in URL",
 			})
 			return
 		}
-		err := DB.Ping(context, nil)
+
+		//get MongoDB client and questions collection
+		DB := services.GetConnection()
+		questionsCollection := services.GetCollection(DB, "questions")
+
+		//retrieve topic from param
+		topic := params.Get("topic")
+
+		//MongoDB filter to search the question related to the `topic` param
+		filter := bson.M{"$text": bson.M{"$search": topic}}
+		cursor, err := questionsCollection.Find(context, filter)
 		if err != nil {
-			context.JSON(http.StatusOK, gin.H{
-				"topic":      params.Get("topic"),
-				"connection": false,
-			})
-		} else {
-			context.JSON(http.StatusOK, gin.H{
-				"topic":      params.Get("topic"),
-				"connection": true,
-			})
+			return
 		}
+		var questions []models.Question
+		if err = cursor.All(context, &questions); err != nil {
+			context.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		context.JSON(http.StatusOK, questions)
 	}
 }
 
