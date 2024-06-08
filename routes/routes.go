@@ -10,7 +10,7 @@ func GetRouter() *gin.Engine {
 	router := gin.Default()
 
 	router.GET("/questions", controllers.GetDisplayQuestionsByTopicHandler())
-	//router.POST("/questions", controllers.UploadQuestionHandler())
+	router.POST("/questions", controllers.UploadQuestionHandler())
 
 	return router
 
