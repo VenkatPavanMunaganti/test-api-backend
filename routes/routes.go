@@ -8,9 +8,9 @@ import (
 func GetRouter() *gin.Engine {
 
 	router := gin.Default()
-
-	router.POST("/questions", controllers.GetAddQuestionsHandler())
+	
 	router.GET("/questions", controllers.GetDisplayQuestionsByTopicHandler())
+	router.POST("/questions", controllers.UploadQuestionHandler())
 
 	return router
 
