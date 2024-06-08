@@ -10,7 +10,7 @@ func GetAddQuestionsHandler() gin.HandlerFunc {
 	return func(context *gin.Context) {
 
 		context.JSON(http.StatusOK, gin.H{
-			"text": "Hello World",
+			"text": "Get request completed",
 		})
 	}
 }
