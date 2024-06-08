@@ -11,7 +11,6 @@ import (
 var DB *mongo.Client
 
 func ConnectToMongo(URI string) error {
-
 	ctx, cancelCtx := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancelCtx()
 
@@ -19,8 +18,9 @@ func ConnectToMongo(URI string) error {
 	if err != nil {
 		log.Println(err)
 	}
+	DB = client
 
-	err = client.Ping(ctx, nil)
+	err = DB.Ping(ctx, nil)
 	if err != nil {
 		log.Fatalln(err)
 		return err

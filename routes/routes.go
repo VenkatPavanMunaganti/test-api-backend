@@ -3,10 +3,9 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/zeekhoks/test-api-backend/controllers"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func GetRouter(DBCon *mongo.Client) *gin.Engine {
+func GetRouter() *gin.Engine {
 
 	router := gin.Default()
 

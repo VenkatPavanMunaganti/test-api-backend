@@ -3,17 +3,21 @@ package controllers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/zeekhoks/test-api-backend/services"
-	"go.mongodb.org/mongo-driver/mongo"
+	"log"
 	"net/http"
 )
-
-var DB *mongo.Client = services.GetConnection()
 
 //var questionCollection = services.GetCollection(DB, "questions")
 
 func GetDisplayQuestionsByTopicHandler() gin.HandlerFunc {
 
 	return func(context *gin.Context) {
+		DB := services.GetConnection()
+		questionsCollection := services.GetCollection(DB, "questions")
+
+		if questionsCollection != nil {
+			log.Println("collection found")
+		}
 
 		params := context.Request.URL.Query()
 
@@ -23,7 +27,6 @@ func GetDisplayQuestionsByTopicHandler() gin.HandlerFunc {
 			})
 			return
 		}
-
 		err := DB.Ping(context, nil)
 		if err != nil {
 			context.JSON(http.StatusOK, gin.H{
