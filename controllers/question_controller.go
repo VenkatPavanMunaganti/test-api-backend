@@ -89,7 +89,7 @@ func UploadQuestionHandler() gin.HandlerFunc {
 		}
 
 		topicDocument := bson.M{"topic": topic}
-		topicRes, err := topicCollection.InsertOne(c, topicDocument)
+		_, err = topicsCollection.InsertOne(c, topicDocument)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": "Server error. Unable to insert topics",
