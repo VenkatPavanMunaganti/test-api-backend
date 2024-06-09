@@ -49,22 +49,30 @@ func UploadQuestionHandler() gin.HandlerFunc {
 
 		DB := services.GetConnection()
 		questionsCollection := services.GetCollection(DB, "questions")
+		topicsCollection := services.GetCollection(DB, "topics")
 
 		file, _ := c.FormFile("questions_file")
+		topic := c.PostForm("topic")
+		if topic == "" || len(topic) == 0 {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"error": "Topic not provided",
+			})
+			return
+		}
+
 		f, _ := file.Open()
 		defer f.Close()
 		content := make([]byte, file.Size)
 		_, err := f.Read(content)
-
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": "Server error. Please try again later",
 			})
 			return
 		}
+
 		var questions []models.Question
 		err = json.Unmarshal(content, &questions)
-
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": "Server error. Please try again later",
@@ -72,24 +80,33 @@ func UploadQuestionHandler() gin.HandlerFunc {
 			return
 		}
 
-		for i := 0; i < len(questions); i++ {
-			fmt.Printf("%v\n", questions[i])
-		}
+		//for i := 0; i < len(questions); i++ {
+		//	fmt.Printf("%v\n", questions[i])
+		//}
 		var interfaces []interface{}
 		for _, question := range questions {
 			interfaces = append(interfaces, question)
 		}
 
 		res, err := questionsCollection.InsertMany(c, interfaces)
-
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": "Server error. Please try again later",
 			})
 			return
 		}
+
+		topicRes, err := topicsCollection.InsertOne(c, topic)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": "Server error. Please try again later",
+			})
+			return
+		}
+
 		c.JSON(http.StatusOK, gin.H{
-			"insertedIDs": fmt.Sprintf("%v", res.InsertedIDs),
+			"insertedIDs":   fmt.Sprintf("%v", res.InsertedIDs),
+			"insertedTopic": fmt.Sprintf("%v", topicRes.InsertedID),
 		})
 
 	}
