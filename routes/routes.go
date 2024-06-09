@@ -11,6 +11,7 @@ func GetRouter() *gin.Engine {
 
 	router.GET("/questions", controllers.GetDisplayQuestionsByTopicHandler())
 	router.POST("/questions", controllers.UploadQuestionHandler())
+	router.GET("/topics", controllers.GetAllTopics())
 
 	return router
 

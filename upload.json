@@ -1,14 +1,8 @@
 [
   {
-    "question": "What is the capital of France?",
-    "options": ["Paris", "London", "Berlin", "Rome"],
-    "correct_answer": "Paris",
-    "distractors": ["London", "Berlin", "Rome"]
-  },
-  {
-    "question": "Who wrote 'Romeo and Juliet'?",
-    "options": ["William Shakespeare", "Jane Austen", "Charles Dickens", "Leo Tolstoy"],
-    "correct_answer": "William Shakespeare",
-    "distractors": ["Jane Austen", "Charles Dickens", "Leo Tolstoy"]
+    "question": "Which is the best TV Show?",
+    "options": ["B99", "New Girl", "Big Bang Theory", "Friends"],
+    "correct_answer": "Friends",
+    "distractors": ["B99", "New Girl", "Big Bang Theory"]
   }
 ]

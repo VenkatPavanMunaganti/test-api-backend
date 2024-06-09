@@ -49,6 +49,16 @@ func UploadQuestionHandler() gin.HandlerFunc {
 
 		DB := services.GetConnection()
 		questionsCollection := services.GetCollection(DB, "questions")
+		topicCollection := services.GetCollection(DB, "topics")
+
+		// Get the topic from the form data
+		topic := c.PostForm("topic")
+		if topic == "" {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"error": "Topic is required",
+			})
+			return
+		}
 
 		file, _ := c.FormFile("questions_file")
 		f, _ := file.Open()
@@ -80,16 +90,26 @@ func UploadQuestionHandler() gin.HandlerFunc {
 			interfaces = append(interfaces, question)
 		}
 
-		res, err := questionsCollection.InsertMany(c, interfaces)
+		topicDocument := bson.M{"topic": topic}
+		topicRes, err := topicCollection.InsertOne(c, topicDocument)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": "Server error. Unable to insert topics",
+			})
+			return
+		}
 
+		res, err := questionsCollection.InsertMany(c, interfaces)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": "Server error. Please try again later",
 			})
 			return
 		}
+
 		c.JSON(http.StatusOK, gin.H{
-			"insertedIDs": fmt.Sprintf("%v", res.InsertedIDs),
+			"QuestionIDs": fmt.Sprintf("%v", res.InsertedIDs),
+			"TopicID":     fmt.Sprintf("%v", topicRes.InsertedID),
 		})
 
 	}
