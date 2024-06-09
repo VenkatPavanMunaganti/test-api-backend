@@ -4,5 +4,11 @@
     "options": ["B99", "New Girl", "Big Bang Theory", "Friends"],
     "correct_answer": "Friends",
     "distractors": ["B99", "New Girl", "Big Bang Theory"]
+  },
+  {
+    "question": "Who gets married first in Friends TV Show?",
+    "options": ["Chandler & Monica", "Joey & Chandler", "Ross & Rachel", "Phoebe & Mike"],
+    "correct_answer": "Ross & Rachel",
+    "distractors": ["Chandler & Monica", "Joey & Chandler", "Phoebe & Mike"]
   }
 ]
