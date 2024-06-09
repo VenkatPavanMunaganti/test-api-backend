@@ -78,8 +78,8 @@ func UploadQuestionHandler() gin.HandlerFunc {
 		var questions []models.Question
 		err = json.Unmarshal(content, &questions)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"error": "Server error. Please try again later",
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid JSON file. Please upload valid JSON",
 			})
 			return
 		}
@@ -96,7 +96,7 @@ func UploadQuestionHandler() gin.HandlerFunc {
 			return
 		}
 
-		topicRes, err := topicsCollection.InsertOne(c, topic)
+		_, err = topicsCollection.InsertOne(c, topic)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": "Server error. Please try again later",
@@ -105,8 +105,8 @@ func UploadQuestionHandler() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"insertedIDs":   fmt.Sprintf("%v", res.InsertedIDs),
-			"insertedTopic": fmt.Sprintf("%v", topicRes.InsertedID),
+			"number_of_questions_inserted": len(res.InsertedIDs),
+			"topic":                        topic,
 		})
 
 	}
@@ -263,7 +263,6 @@ func SubmitAnswerHandler() gin.HandlerFunc {
 			if questionIdParsed.String() == q.ID.String() {
 				found := false
 				for _, option := range q.Options {
-					fmt.Printf("Option:%v\n", option)
 					if strings.ToLower(option) == bodyParsed["choice"] {
 						found = true
 					}
