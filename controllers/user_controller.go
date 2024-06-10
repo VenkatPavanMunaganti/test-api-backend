@@ -1,11 +1,14 @@
 package controllers
 
 import (
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/zeekhoks/test-api-backend/models"
 	"github.com/zeekhoks/test-api-backend/services"
 	"log"
 	"net/http"
+	"os"
+	"time"
 )
 
 func CreateNewUser() gin.HandlerFunc {
@@ -32,5 +35,44 @@ func CreateNewUser() gin.HandlerFunc {
 		}
 
 		ctx.JSON(http.StatusCreated, createdUser)
+	}
+}
+
+func LoginHandler() gin.HandlerFunc {
+	return func(context *gin.Context) {
+
+		val, _ := context.Get("loggedInAccount")
+
+		user, ok := val.(models.User)
+
+		if !ok {
+			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": "Internal server error. Try again",
+			})
+			return
+		}
+
+		claims := models.MyUserClaims{
+			user,
+			jwt.StandardClaims{
+				ExpiresAt: time.Now().Add(time.Minute * 45).Unix(),
+			},
+		}
+
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+		signingKey := os.Getenv("SIGNING_KEY")
+		tokenString, err := token.SignedString([]byte(signingKey))
+		if err != nil {
+			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": "Internal server error. Try again later",
+			})
+			return
+		} else {
+			context.JSON(http.StatusOK, gin.H{
+				"user":  user,
+				"token": tokenString,
+			})
+		}
 	}
 }
