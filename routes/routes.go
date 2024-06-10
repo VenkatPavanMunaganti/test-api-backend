@@ -10,13 +10,18 @@ func GetRouter() *gin.Engine {
 
 	router := gin.Default()
 
-	router.GET("/questions", middleware.BasicAuth(), controllers.GetDisplayQuestionsByTopicHandler())
-	router.POST("/questions", middleware.AdminAuth(), controllers.UploadQuestionHandler())
-	router.GET("/topics", middleware.BasicAuth(), controllers.GetAllTopics())
-	router.POST("/user", controllers.CreateNewUser())
-	router.POST("/quiz", controllers.GenerateQuizHandler())
-	router.POST("/quiz/:id/response", controllers.SubmitAnswerHandler())
-	router.GET("/quiz/:id/result", controllers.QuizResultHandler())
+	apiGroup := router.Group("/api")
+
+	apiGroup.POST("/user", controllers.CreateNewUser())
+	apiGroup.POST("/login", middleware.BasicAuth(), controllers.LoginHandler())
+
+	apiGroup.POST("/questions", middleware.UserExtractor(), middleware.AdminCheck(), controllers.UploadQuestionHandler())
+	apiGroup.GET("/questions", middleware.UserExtractor(), middleware.AdminCheck(), controllers.GetDisplayQuestionsByTopicHandler())
+
+	apiGroup.GET("/topics", middleware.UserExtractor(), controllers.GetAllTopics())
+	apiGroup.POST("/quiz", middleware.UserExtractor(), controllers.GenerateQuizHandler())
+	apiGroup.POST("/quiz/:id/response", middleware.UserExtractor(), controllers.SubmitAnswerHandler())
+	apiGroup.GET("/quiz/:id/result", middleware.UserExtractor(), controllers.QuizResultHandler())
 
 	return router
 }

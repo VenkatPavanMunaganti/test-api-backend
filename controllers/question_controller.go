@@ -38,13 +38,22 @@ func GetDisplayQuestionsByTopicHandler() gin.HandlerFunc {
 		if err != nil {
 			return
 		}
-		var questions []models.Question
+		var questions []models.QuestionUnmarshal
 		if err = cursor.All(context, &questions); err != nil {
 			context.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		context.JSON(http.StatusOK, questions)
+		if questions == nil || len(questions) == 0 {
+			context.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+				"error": "No questions found with this topic",
+			})
+			return
+		}
+
+		context.JSON(http.StatusOK, gin.H{
+			"questions": questions,
+		})
 	}
 }
 
@@ -75,7 +84,7 @@ func UploadQuestionHandler() gin.HandlerFunc {
 			return
 		}
 
-		var questions []models.Question
+		var questions []models.QuestionUnmarshal
 		err = json.Unmarshal(content, &questions)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -88,7 +97,9 @@ func UploadQuestionHandler() gin.HandlerFunc {
 			interfaces = append(interfaces, question)
 		}
 
-		topicDocument := bson.M{"topic": topic}
+		topicDocument := bson.M{
+			"topic": topic,
+		}
 		_, err = topicsCollection.InsertOne(c, topicDocument)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -98,14 +109,6 @@ func UploadQuestionHandler() gin.HandlerFunc {
 		}
 
 		res, err := questionsCollection.InsertMany(c, interfaces)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"error": "Server error. Please try again later",
-			})
-			return
-		}
-
-		_, err = topicsCollection.InsertOne(c, topic)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": "Server error. Please try again later",
@@ -124,7 +127,6 @@ func UploadQuestionHandler() gin.HandlerFunc {
 func GenerateQuizHandler() gin.HandlerFunc {
 	return func(context *gin.Context) {
 
-		//get params from the request
 		params := context.Request.URL.Query()
 		if params.Get("topic") == "" {
 			context.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
@@ -133,15 +135,12 @@ func GenerateQuizHandler() gin.HandlerFunc {
 			return
 		}
 
-		//get MongoDB client and questions collection
 		DB := services.GetConnection()
 		questionsCollection := services.GetCollection(DB, "questions")
 		quizCollection := services.GetCollection(DB, "quizzes")
 
-		//retrieve topic from param
 		topic := params.Get("topic")
 
-		//MongoDB filter to search the question related to the `topic` param
 		filter := bson.M{"$text": bson.M{"$search": topic}}
 		cursor, err := questionsCollection.Find(context, filter)
 		if err != nil {
@@ -161,10 +160,15 @@ func GenerateQuizHandler() gin.HandlerFunc {
 		}
 
 		startTime := time.Now()
-		endTime := startTime.Add(2 * time.Minute)
+		endTime := startTime.Add(30 * time.Minute)
+
+		userAny, _ := context.Get("loggedInAccount")
+
+		user := userAny.(models.User)
 
 		quiz := &models.Quiz{
 			Topic:         topic,
+			User:          user,
 			Questions:     questions,
 			UserResponses: make([]models.UserResponse, 0),
 			Completed:     false,
@@ -220,6 +224,17 @@ func SubmitAnswerHandler() gin.HandlerFunc {
 		if err != nil {
 			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": "Internal server  error",
+			})
+			return
+		}
+
+		userAny, _ := context.Get("loggedInAccount")
+
+		user := userAny.(models.User)
+
+		if user.Username != quiz.User.Username {
+			context.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "Quiz not started by the same user",
 			})
 			return
 		}
@@ -288,7 +303,7 @@ func SubmitAnswerHandler() gin.HandlerFunc {
 
 		if question.ID.String() != questionIdParsed.String() {
 			context.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"error": "Question with given ID not found",
+				"error": "Question with given ID not found in this particular quiz",
 			})
 			return
 		}
@@ -366,6 +381,10 @@ func QuizResultHandler() gin.HandlerFunc {
 			return
 		}
 
+		userAny, _ := context.Get("loggedInAccount")
+
+		user := userAny.(models.User)
+
 		if context.Request.ContentLength != 0 {
 			context.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"error": "Body not expected for this request",
@@ -379,6 +398,13 @@ func QuizResultHandler() gin.HandlerFunc {
 		if err != nil {
 			context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": "Internal server  error",
+			})
+			return
+		}
+
+		if !user.IsAdmin && user.Username != quiz.User.Username {
+			context.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "You don't have permissions to view this quiz's result",
 			})
 			return
 		}
